@@ -37,6 +37,13 @@ const dollRect = (doll, s) =>
     return [(s - w) / 2, s * 0.08, w, h]
 }
 
+/** Position du titre sur la pochette, en bas à droite (la même pour toutes les textures) */
+const titleRect = (title, s) =>
+{
+    const w = s * 0.24
+    return [s - w - s * 0.05, s * 0.86, w, w * (title.height / title.width)]
+}
+
 /** Usure en anneau laissée par le disque rangé dans la pochette ("ring wear") */
 const RING = { r: 0.43, width: 0.035 }
 const ringWear = (ctx, s, color, strength) =>
@@ -86,28 +93,33 @@ const edgeWear = (ctx, s) =>
  * Textures de surface (1024 px) : relief, brillance, vernis.
  * - relief : grain du carton + poupée bombée (gaufrage) + léger creux de l'anneau d'usure
  * - brillance : carton mat, encre de la poupée satinée, anneau d'usure un peu lustré
- * - vernis : uniquement sur la poupée (vernis sélectif)
+ * - vernis : uniquement sur la poupée et le titre (vernis sélectif)
  */
-const drawSurface = (doll) =>
+const drawSurface = (doll, title) =>
 {
     const s = 1024
     const [, ctx] = makeCanvas(s)
-    const [x, y, w, h] = dollRect(doll, s)
 
-    // silhouette de la poupée floutée à deux niveaux -> profil arrondi
-    const silhouette = (blur) =>
+    // silhouette de la poupée et du titre floutée à deux niveaux -> profil arrondi
+    // (le titre est bien plus fin que la poupée : flou plus léger pour qu'il garde du relief)
+    const silhouette = (dollBlur, titleBlur) =>
     {
         ctx.clearRect(0, 0, s, s)
-        ctx.filter = `blur(${blur}px)`
-        ctx.drawImage(doll, x, y, w, h)
+        ctx.filter = `blur(${dollBlur}px)`
+        ctx.drawImage(doll, ...dollRect(doll, s))
+        if(title)
+        {
+            ctx.filter = `blur(${titleBlur}px)`
+            ctx.drawImage(title, ...titleRect(title, s))
+        }
         ctx.filter = 'none'
         const data = ctx.getImageData(0, 0, s, s).data
         const a = new Float32Array(s * s)
         for(let i = 0; i < a.length; i++) a[i] = data[i * 4 + 3] / 255
         return a
     }
-    const sharp = silhouette(1.5)
-    const soft = silhouette(5)
+    const sharp = silhouette(1.5, 0.6)
+    const soft = silhouette(5, 1.6)
 
     // anneau d'usure, dessiné dans une couche à part
     ctx.clearRect(0, 0, s, s)
@@ -188,8 +200,7 @@ const drawCover = (doll, title) =>
 
     if(title)
     {
-        const tw = s * 0.24
-        ctx.drawImage(title, s - tw - s * 0.05, s * 0.86, tw, tw * (title.height / title.width))
+        ctx.drawImage(title, ...titleRect(title, s))
     }
     return canvas
 }
@@ -315,7 +326,7 @@ export default class Vinyl
         cover.anisotropy = anisotropy
         this.coverMaterial.map = cover
 
-        const surface = drawSurface(doll)
+        const surface = drawSurface(doll, title)
         const linear = (canvas) =>
         {
             const t = new THREE.CanvasTexture(canvas)
