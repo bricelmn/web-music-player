@@ -1,0 +1,257 @@
+:root {
+    --pink: #e0479e;
+    --pink-light: #ff8fcb;
+    --bg: #0e0a10;
+    --text: #f6e9f1;
+    --muted: #a08a98;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Fredoka', system-ui, sans-serif;
+    overflow: hidden;
+    height: 100%;
+}
+
+.webgl {
+    position: fixed;
+    inset: 0;
+    outline: none;
+}
+
+/* ------------------------------------------------ panneau de droite */
+.panel {
+    position: fixed;
+    top: 50%;
+    right: 7vw;
+    transform: translateY(-50%);
+    width: min(420px, 38vw);
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.album-title {
+    width: 70%;
+    filter: drop-shadow(0 6px 18px rgba(224, 71, 158, 0.35));
+}
+
+.artist {
+    margin-top: -0.8rem;
+    letter-spacing: 0.4em;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.tracklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.track {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.6rem 0 0.6rem 2.2rem; /* place à gauche pour le triangle 3D */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.25s, transform 0.25s;
+}
+
+.track:hover {
+    color: var(--pink-light);
+    transform: translateX(4px);
+}
+
+.track .num {
+    color: var(--muted);
+    font-size: 0.8rem;
+    width: 1.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.track .name {
+    flex: 1;
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+.track .dur {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.track.active .name {
+    color: var(--pink);
+}
+
+/* ------------------------------------------------ lecteur */
+.player {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.btn {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.btn:hover {
+    background: rgba(224, 71, 158, 0.35);
+    transform: scale(1.06);
+}
+
+.btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.btn.play {
+    background: var(--pink);
+}
+
+.btn.play:hover {
+    background: var(--pink-light);
+}
+
+.icon-pause,
+.icon-muted,
+.playing .icon-play,
+.muted .icon-sound {
+    display: none;
+}
+
+.playing .icon-pause,
+.muted .icon-muted {
+    display: block;
+}
+
+.timeline {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.time {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.4rem;
+    text-align: center;
+}
+
+.seek {
+    --p: 0%;
+    flex: 1;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    background: linear-gradient(to right, var(--pink) var(--p), rgba(255, 255, 255, 0.15) var(--p));
+}
+
+.seek::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    box-shadow: 0 0 0 4px rgba(224, 71, 158, 0.4);
+}
+
+.seek::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text);
+}
+
+/* ------------------------------------------------ original / instru / voix */
+.modes {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.3rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    align-self: flex-start;
+}
+
+.modes button {
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+}
+
+.modes button:hover {
+    color: var(--text);
+}
+
+.modes button.active {
+    color: #fff;
+    background: var(--pink);
+}
+
+/* chargement d'un morceau : le bouton lecture respire */
+.btn.play.loading {
+    animation: loading 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes loading {
+    to { opacity: 0.45; }
+}
+
+/* ------------------------------------------------ mobile : logo en haut, liste en bas */
+@media (max-width: 760px) {
+    .panel {
+        top: auto;
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        transform: none;
+        width: auto;
+        gap: 0.8rem;
+    }
+
+    .album-title {
+        width: 45%;
+    }
+
+    .track {
+        padding: 0.45rem 0 0.45rem 2rem;
+    }
+
+    .track .name {
+        font-size: 1rem;
+    }
+}

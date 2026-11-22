@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB — Poupée Parfaite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <canvas class="webgl"></canvas>
+
+    <main class="panel">
+        <img class="album-title" src="/images/titre.png" alt="Poupée Parfaite">
+        <p class="artist">WEB</p>
+
+        <ol class="tracklist"></ol>
+
+        <div class="modes" role="group" aria-label="Pistes à écouter">
+            <button data-mode="original" class="active" aria-pressed="true">Original</button>
+            <button data-mode="instru" aria-pressed="false">Instru</button>
+            <button data-mode="voix" aria-pressed="false">Voix</button>
+        </div>
+
+        <div class="player">
+            <button class="btn play" aria-label="Lecture">
+                <svg class="icon-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>
+            </button>
+
+            <div class="timeline">
+                <span class="time current">0:00</span>
+                <input class="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Position dans le morceau">
+                <span class="time total">0:00</span>
+            </div>
+
+            <button class="btn mute" aria-label="Couper le son">
+                <svg class="icon-sound" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg class="icon-muted" viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9z"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+    </main>
+
+    <script type="module" src="./script.js"></script>
+</body>
+</html>
