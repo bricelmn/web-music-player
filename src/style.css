@@ -255,3 +255,136 @@ body {
         font-size: 1rem;
     }
 }
+
+/* ------------------------------------------------ écran de chargement */
+.loader {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg);
+    transition: opacity 0.9s ease, visibility 0.9s;
+}
+
+.loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* la poupée : l'image sert de masque, on peint dessous un gris (vide) et un rose (plein) */
+.loader-doll {
+    position: relative;
+    width: min(200px, 42vw);
+    aspect-ratio: 1;
+}
+
+.loader-doll-empty,
+.loader-doll-fill {
+    position: absolute;
+    inset: 0;
+    -webkit-mask: url('/images/loader-poupee.png') center / contain no-repeat;
+    mask: url('/images/loader-poupee.png') center / contain no-repeat;
+}
+
+.loader-doll-empty {
+    background: #2c2230;
+}
+
+.loader-doll-fill {
+    --p: 0;
+    background: linear-gradient(to top, var(--pink), var(--pink-light));
+    /* on ne montre que le bas de la poupée, sur une hauteur égale à la progression */
+    clip-path: inset(calc((1 - var(--p)) * 100%) 0 0 0);
+}
+
+/* une fois pleine, la poupée brille doucement */
+.loader.ready .loader-doll {
+    filter: drop-shadow(0 0 24px rgba(224, 71, 158, 0.55));
+    animation: loader-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes loader-glow {
+    to { filter: drop-shadow(0 0 10px rgba(224, 71, 158, 0.25)); }
+}
+
+.loader-title {
+    margin-top: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.loader-progress {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.loader-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s, transform 0.5s;
+    pointer-events: none;
+}
+
+.loader.ready .loader-progress {
+    display: none;
+}
+
+.loader.ready .loader-actions {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.loader-listen {
+    font: inherit;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--pink);
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2.4rem;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(224, 71, 158, 0.4);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.loader-listen:hover,
+.loader-listen:focus-visible {
+    background: var(--pink-light);
+    transform: scale(1.05);
+}
+
+.loader-silent {
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.loader-silent:hover,
+.loader-silent:focus-visible {
+    color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loader.ready .loader-doll { animation: none; }
+}

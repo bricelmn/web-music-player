@@ -12,6 +12,20 @@
 <body>
     <canvas class="webgl"></canvas>
 
+    <!-- Écran de chargement : la poupée se remplit de rose au fil du chargement, puis on entre -->
+    <div class="loader" role="dialog" aria-modal="true" aria-labelledby="loader-title">
+        <div class="loader-doll" aria-hidden="true">
+            <div class="loader-doll-empty"></div>
+            <div class="loader-doll-fill"></div>
+        </div>
+        <p class="loader-title" id="loader-title">WEB — Poupée Parfaite</p>
+        <p class="loader-progress" role="status" aria-live="polite">Chargement… <span class="loader-percent">0</span> %</p>
+        <div class="loader-actions">
+            <button class="loader-listen">Écouter</button>
+            <button class="loader-silent">Entrer sans le son</button>
+        </div>
+    </div>
+
     <main class="panel">
         <img class="album-title" src="/images/titre.png" alt="Poupée Parfaite">
         <p class="artist">WEB</p>

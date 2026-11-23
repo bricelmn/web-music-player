@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import Player, { formatTime } from './player.js'
 import Vinyl from './vinyl.js'
+import Loader from './loader.js'
 
 /**
  * Morceaux, dans l'ordre de la tracklist officielle (l'ordre ici = l'ordre affiché).
@@ -142,7 +143,8 @@ scene.add(keyLight)
 const cameraGroup = new THREE.Group()
 scene.add(cameraGroup)
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
-camera.position.z = 6
+const CAMERA_DISTANCE = 6
+camera.position.z = CAMERA_DISTANCE
 cameraGroup.add(camera)
 
 /**
@@ -151,6 +153,26 @@ cameraGroup.add(camera)
 const logoGroup = new THREE.Group()
 scene.add(logoGroup)
 const vinyl = new Vinyl(renderer)
+
+/**
+ * Écran de chargement : attend la police, les textures de la pochette et le premier morceau.
+ * Le clic sur "Écouter" lance la musique pile au moment où la scène apparaît.
+ */
+const loader = new Loader(document.querySelector('.loader'))
+let fontsLoaded = !document.fonts
+document.fonts?.ready.then(() => { fontsLoaded = true })
+loader.add('police', 1, () => fontsLoaded ? 1 : 0)
+loader.add('pochette', 3, () => vinyl.loaded ? 1 : 0)
+loader.add('premier morceau', 6, () => player.loadProgress(0))
+
+// entrée dans la scène : la caméra arrive en douceur depuis un peu plus loin
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+let introStart = null
+loader.done.then((choice) =>
+{
+    introStart = performance.now()
+    if(choice === 'listen') player.play()
+})
 const logo = vinyl.group
 logoGroup.add(logo)
 
@@ -245,12 +267,17 @@ const layout = () =>
         ? { left: 0, right: sizes.width, top: 0, bottom: panel.top }
         : { left: 0, right: panel.left - 24, top: 0, bottom: sizes.height } // 24 px : place du triangle
 
+    // on calcule toujours avec la caméra à sa place normale (pendant l'intro, elle arrive de plus loin)
+    const cameraZ = camera.position.z
+    camera.position.z = CAMERA_DISTANCE
     camera.updateMatrixWorld()
     const p = screenToWorld((zone.left + zone.right) / 2, (zone.top + zone.bottom) / 2, new THREE.Vector3())
     if(p) logoGroup.position.set(p.x - cameraGroup.position.x, p.y - cameraGroup.position.y, 0)
+    camera.position.z = cameraZ
+    camera.updateMatrixWorld()
 
     // taille : le vinyle tient dans la zone, marge comprise
-    const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z
+    const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * CAMERA_DISTANCE
     const unitsPerPixel = visibleHeight / sizes.height
     const byWidth = ((zone.right - zone.left) * unitsPerPixel * SAFETY) / VINYL_WIDTH
     const byHeight = ((zone.bottom - zone.top) * unitsPerPixel * (mobile ? 0.75 : 0.62)) / VINYL_HEIGHT
@@ -312,7 +339,9 @@ const tick = () =>
     kick *= Math.exp(-7 * delta)
 
     // temps fort : la caméra donne un petit coup en avant
-    camera.position.z = 6 - kick * 0.15
+    const intro = introStart === null ? 0 : reducedMotion ? 1 : Math.min(1, (performance.now() - introStart) / 1800)
+    const introEase = 1 - Math.pow(1 - intro, 3)
+    camera.position.z = CAMERA_DISTANCE + (1 - introEase) * 2.5 - kick * 0.15
     logo.rotation.y = Math.sin(elapsed * 0.6) * 0.15 + cursor.x * 0.35
     logo.rotation.x = cursor.y * 0.2
 

@@ -309,7 +309,8 @@ export default class Vinyl
         this.spin = 0         // angle courant
         this.speed = 0        // vitesse courante (rad/s)
 
-        this.load()
+        this.loaded = false
+        this.ready = this.load().then(() => { this.loaded = true })
     }
 
     async load()

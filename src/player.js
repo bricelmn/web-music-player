@@ -43,7 +43,7 @@ export default class Player extends EventTarget
         this.beatGrids = new Map() // temps forts de chaque morceau (voir beats.js)
         this.beatJobs = new Map()
 
-        this.fetchFiles(0) // on commence à télécharger le premier morceau tout de suite
+        this.decode(0) // on prépare le premier morceau tout de suite (pendant l'écran de chargement)
         setInterval(() => { if(this._playing) this.emit('update') }, 250)
     }
 
@@ -86,31 +86,66 @@ export default class Player extends EventTarget
 
     // ------------------------------------------------------------------ chargement
 
-    /** Télécharge les deux pistes d'un morceau (sans les décoder) */
+    /** Télécharge les deux pistes d'un morceau (sans les décoder), en suivant la progression */
     fetchFiles(index)
     {
         if(!this.files.has(index) && !this.buffers.has(index))
         {
             const { instru, voix } = this.tracks[index]
-            this.files.set(index, Promise.all([instru, voix].map(url => fetch(url).then(r => r.arrayBuffer()))))
+            const state = this.loadState(index)
+            this.files.set(index, Promise.all([instru, voix].map((url, i) => fetchWithProgress(url, (loaded, total) =>
+            {
+                state.loaded[i] = loaded
+                state.total[i] = total
+            }))))
         }
         return this.files.get(index)
     }
 
-    /** Décode les deux pistes d'un morceau. On garde au plus 3 morceaux en mémoire. */
+    loadState(index)
+    {
+        this.loadStates ??= new Map()
+        if(!this.loadStates.has(index)) this.loadStates.set(index, { loaded: [0, 0], total: [0, 0], decoded: false })
+        return this.loadStates.get(index)
+    }
+
+    /** Progression du chargement d'un morceau (0 → 1) : téléchargement des deux pistes puis décodage */
+    loadProgress(index)
+    {
+        const s = this.loadState(index)
+        if(s.decoded) return 1
+        const total = s.total[0] + s.total[1]
+        const download = total ? (s.loaded[0] + s.loaded[1]) / total : 0
+        return download * 0.85 // les 15 % restants = décodage
+    }
+
+    /**
+     * Décode les deux pistes d'un morceau. On garde au plus 3 morceaux en mémoire.
+     * Le décodage passe par un contexte "hors ligne" : il peut donc commencer avant le premier clic
+     * (pendant l'écran de chargement), le son est prêt dès qu'on appuie sur "Écouter".
+     */
     decode(index)
     {
         if(!this.buffers.has(index))
         {
+            this.decoder ??= new OfflineAudioContext(2, 1, 44100)
             const job = this.fetchFiles(index)
-                .then(([a, b]) => Promise.all([this.ctx.decodeAudioData(a), this.ctx.decodeAudioData(b)]))
-                .then(([instru, voix]) => ({ instru, voix }))
+                .then(([a, b]) => Promise.all([this.decoder.decodeAudioData(a), this.decoder.decodeAudioData(b)]))
+                .then(([instru, voix]) =>
+                {
+                    this.loadState(index).decoded = true
+                    return { instru, voix }
+                })
                 .catch((error) => { console.warn('[lecteur] morceau illisible', error); this.buffers.delete(index); return null })
                 .finally(() => this.files.delete(index))
             this.buffers.set(index, job)
 
             for(const key of this.buffers.keys())
-                if(this.buffers.size > 3 && key !== index && key !== this.index) this.buffers.delete(key)
+                if(this.buffers.size > 3 && key !== index && key !== this.index)
+                {
+                    this.buffers.delete(key)
+                    this.loadStates?.delete(key)
+                }
         }
         return this.buffers.get(index)
     }
@@ -426,6 +461,32 @@ export default class Player extends EventTarget
         this.scratchCurve = { start: performance.now(), pos, sr, duration }
         await new Promise(r => setTimeout(r, duration * 1000 - 40))
     }
+}
+
+/** Télécharge un fichier en signalant la progression (octets reçus / total) */
+async function fetchWithProgress(url, onProgress)
+{
+    const response = await fetch(url)
+    if(!response.ok) throw new Error(`${url} : ${response.status}`)
+    const total = Number(response.headers.get('content-length')) || 0
+    if(!response.body || !total)
+    {
+        const data = await response.arrayBuffer()
+        onProgress(data.byteLength, data.byteLength)
+        return data
+    }
+    const reader = response.body.getReader()
+    const bytes = new Uint8Array(total)
+    let loaded = 0
+    for(;;)
+    {
+        const { done, value } = await reader.read()
+        if(done) break
+        bytes.set(value, loaded)
+        loaded += value.length
+        onProgress(loaded, total)
+    }
+    return bytes.buffer
 }
 
 /** Formate des secondes en m:ss */
